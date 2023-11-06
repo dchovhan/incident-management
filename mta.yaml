@@ -1,0 +1,83 @@
+_schema-version: "3.2"
+ID: mta_helloworld
+version: 0.0.1
+modules:
+- name: mta_helloworld-app-content
+  type: com.sap.application.content
+  path: .
+  requires:
+  - name: mta_helloworld-repo-host
+    parameters:
+      content-target: true
+  build-parameters:
+    build-result: resources
+    requires:
+    - artifacts:
+      - frontend.zip
+      name: frontend
+      target-path: resources/
+- name: frontend
+  type: html5
+  path: frontend
+  build-parameters:
+    build-result: dist
+    builder: custom
+    commands:
+    - npm install
+    - npm run build:cf
+    supported-platforms: []
+- name: mta_helloworld-destination-content
+  type: com.sap.application.content
+  requires:
+  - name: mta_helloworld-destination-service
+    parameters:
+      content-target: true
+  - name: mta_helloworld-repo-host
+    parameters:
+      service-key:
+        name: mta_helloworld-repo-host-key
+  - name: uaa_mta_helloworld
+    parameters:
+      service-key:
+        name: uaa_mta_helloworld-key
+  parameters:
+    content:
+      instance:
+        destinations:
+        - Name: app_router_helloworld_mta_helloworld_repo_host
+          ServiceInstanceName: mta_helloworld-html5-srv
+          ServiceKeyName: mta_helloworld-repo-host-key
+          sap.cloud.service: app_router_helloworld
+        - Authentication: OAuth2UserTokenExchange
+          Name: app_router_helloworld_uaa_mta_helloworld
+          ServiceInstanceName: mta_helloworld-xsuaa-service
+          ServiceKeyName: uaa_mta_helloworld-key
+          sap.cloud.service: app_router_helloworld
+        existing_destinations_policy: ignore
+  build-parameters:
+    no-source: true
+resources:
+- name: mta_helloworld-repo-host
+  type: org.cloudfoundry.managed-service
+  parameters:
+    service: html5-apps-repo
+    service-name: mta_helloworld-html5-srv
+    service-plan: app-host
+- name: mta_helloworld-destination-service
+  type: org.cloudfoundry.managed-service
+  parameters:
+    config:
+      HTML5Runtime_enabled: true
+      version: 1.0.0
+    service: destination
+    service-name: mta_helloworld-destination-service
+    service-plan: lite
+- name: uaa_mta_helloworld
+  type: org.cloudfoundry.managed-service
+  parameters:
+    path: ./xs-security.json
+    service: xsuaa
+    service-name: mta_helloworld-xsuaa-service
+    service-plan: application
+parameters:
+  deploy_mode: html5-repo
